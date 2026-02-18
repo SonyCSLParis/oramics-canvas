@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <script type="module">
+        import * as Juce from './juce_frontend.js';
+
+        const socket = io('http://localhost:3333');
+        let sendToJuceFunc = null;
+
+        try {
+            sendToJuceFunc = Juce.getNativeFunction("sendToJuce");
+        } catch (e) {
+            socket.emit('vst_debug', 'Error binding function: ' + e.message);
+        }
+
+        socket.on('connect', () => {
+            socket.emit('iam_active');
+            socket.emit('vst_debug', 'Bridge Connected! JUCE Library Loaded: ' + (sendToJuceFunc !== null));
+        });
+
+        socket.on('to_vst', (data) => {
+            if (sendToJuceFunc) {
+                sendToJuceFunc(data);
+            } else {
+                socket.emit('vst_debug', 'ERROR: sendToJuceFunc is missing!');
+            }
+        });
+    </script>
+</body>
+</html>
