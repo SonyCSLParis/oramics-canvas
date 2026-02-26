@@ -13,19 +13,19 @@
         try {
             sendToJuceFunc = Juce.getNativeFunction("sendToJuce");
         } catch (e) {
-            socket.emit('vst_debug', 'Error binding function: ' + e.message);
+            socket.emit('vst_debug', 'Error binding fn: ' + e.message);
         }
 
         socket.on('connect', () => {
             socket.emit('iam_active');
-            socket.emit('vst_debug', 'Bridge Connected! JUCE Library Loaded: ' + (sendToJuceFunc !== null));
+            socket.emit('vst_debug', 'Bridge Connected - JUCE Lib loaded: ' + (sendToJuceFunc !== null));
         });
 
         socket.on('to_vst', (data) => {
             if (sendToJuceFunc) {
                 sendToJuceFunc(data);
             } else {
-                socket.emit('vst_debug', 'ERROR: sendToJuceFunc is missing!');
+                socket.emit('vst_debug', 'ERROR: sendToJuceFunc is missing');
             }
         });
     </script>
