@@ -7,7 +7,7 @@ let mode = 'waveform';
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
-    socket = io.connect('http://192.168.1.49:3333');
+    socket = io.connect('http://localhost:3333');
 
     socket.on('vst_list', (list) => {
         list.forEach(id => {
