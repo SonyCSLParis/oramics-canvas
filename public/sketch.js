@@ -7,7 +7,7 @@ let mode = 'waveform';
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
-    socket = io.connect('http://localhost:3333');
+    socket = io.connect('http://10.0.3.34:3333');
 
     socket.on('vst_list', (list) => {
         list.forEach(id => {
@@ -60,10 +60,10 @@ function draw() {
             current.lockedY = mouseY;
             if (mode === 'waveform') {
                 current.waveLayer.clear();
-                socket.emit('drawing', { type: 'clear', target: currentTargetVST });
+                // socket.emit('drawing', { type: 'clear', target: currentTargetVST });
             } else {
                 current.melodyLayer.clear();
-                socket.emit('drawing', { type: 'melody_clear', target: currentTargetVST });
+                // socket.emit('drawing', { type: 'melody_clear', target: currentTargetVST });
             }
             prevX = mouseX;
             prevY = mouseY;
