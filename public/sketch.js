@@ -15,6 +15,11 @@ const UI = {
     BUTTON_BOTTOM_MARGIN: 34
 };
 
+const PIANO_ROLL = {
+    MIN_PITCH: 36, // C2
+    MAX_PITCH: 96, // C7
+};
+
 let socket;
 let vsts = {};
 let currentTargetVST = null;
@@ -40,6 +45,7 @@ function setup() {
 
 function draw() {
     background(51);
+    drawPianoRollBackground(20);
 
     if (currentTargetVST && vsts[currentTargetVST]) {
         const current = vsts[currentTargetVST];
@@ -51,6 +57,48 @@ function draw() {
 
     drawTabs();
     drawModeButtons();
+}
+
+function drawPianoRollBackground(opacity = 30) {
+    const top = UI.TAB_HEIGHT;
+    const bottom = height;
+    const h = Math.max(1, bottom - top);
+
+    const minPitch = Math.min(PIANO_ROLL.MIN_PITCH, PIANO_ROLL.MAX_PITCH);
+    const maxPitch = Math.max(PIANO_ROLL.MIN_PITCH, PIANO_ROLL.MAX_PITCH);
+    const totalNotes = Math.max(1, (maxPitch - minPitch) + 1);
+    const rowH = h / totalNotes;
+
+    noStroke();
+    for (let i = 0; i < totalNotes; i++) {
+        const pitch = maxPitch - i;
+        const pitchClass = pitch % 12;
+        const isBlackKey = [1, 3, 6, 8, 10].includes(pitchClass);
+        const y = top + i * rowH;
+
+        fill(isBlackKey ? color(24, 24, 28, opacity) : color(150, 150, 165, opacity));
+        rect(0, y, width, rowH + 1);
+    }
+
+    // Horizontal semitone lines
+    stroke(255, 255, 255, 28);
+    strokeWeight(1);
+    for (let i = 0; i <= totalNotes; i++) {
+        const y = top + i * rowH;
+        line(0, y, width, y);
+    }
+
+    // Highlight octaves
+
+    for (let i = 0; i < totalNotes; i++) {
+        const pitch = maxPitch - i;
+        const pitchClass = pitch % 12;
+        if (pitchClass === 0) {
+            const y = top + i * rowH;
+            fill(0, 150, 0, opacity+20);
+            rect(0, y, width, rowH);
+        }
+    }
 }
 
 function windowResized() {
