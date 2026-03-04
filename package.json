@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "node scripts/build-web.mjs"
   },
   "keywords": [
     "sockets",
@@ -17,5 +18,9 @@
   "dependencies": {
     "express": "^5.2.1",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9",
+    "html-minifier-terser": "^7.2.0"
   }
 }

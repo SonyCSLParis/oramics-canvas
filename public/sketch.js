@@ -34,13 +34,23 @@ function setup() {
     const cnv = createCanvas(windowWidth, windowHeight);
     cnv.position(0, 0);
     cnv.style('display', 'block');
-    socket = io.connect('http://localhost:3333');
+    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    socket = new WebSocket(`${wsScheme}://${window.location.host}/ws`);
 
-    socket.on('vst_list', handleVstList);
-    socket.on('connect', () => {
-        socket.emit('request_current_vst');
+    socket.addEventListener('open', () => {
+        if (!currentTargetVST) {
+            currentTargetVST = 'embedded-vst';
+            handleVstList([currentTargetVST]);
+        }
         sendMelodyPlaybackMode();
     });
+}
+
+function sendProtocolMessage(payload) {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        return;
+    }
+    socket.send(JSON.stringify(payload));
 }
 
 function draw() {
@@ -201,12 +211,12 @@ function handleDrawing(current) {
         current.waveLayer.strokeWeight(4);
         current.waveLayer.line(prevX, prevY, mouseX, mouseY);
         // For waveform mode, we only need the coordinates, not the timing
-        socket.emit('drawing', { type: 'drawing', x1, y1, x2, y2, target: currentTargetVST });
+        sendProtocolMessage({ type: 'drawing', x1, y1, x2, y2, target: currentTargetVST });
     } else {
         current.melodyLayer.stroke(255, 200, 100);
         current.melodyLayer.strokeWeight(4);
         current.melodyLayer.line(prevX, prevY, mouseX, mouseY);
-        socket.emit('drawing', { type: 'melody', x1, y1, t1, x2, y2, t2, target: currentTargetVST });
+        sendProtocolMessage({ type: 'melody', x1, y1, t1, x2, y2, t2, target: currentTargetVST });
     }
 
     prevX = mouseX;
@@ -242,7 +252,7 @@ function mouseReleased() {
         return;
     }
 
-    socket.emit('drawing', {
+    sendProtocolMessage({
         type: mode === MODES.WAVEFORM ? 'pen_up' : 'melody_pen_up',
         target: currentTargetVST
     });
@@ -396,7 +406,7 @@ function sendMelodyPlaybackMode() {
         return;
     }
 
-    socket.emit('drawing', {
+    sendProtocolMessage({
         type: 'melody_mode',
         mode: melodyPlaybackMode,
         target: currentTargetVST
