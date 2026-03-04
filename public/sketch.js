@@ -44,6 +44,16 @@ function setup() {
         }
         sendMelodyPlaybackMode();
     });
+
+    socket.addEventListener('message', (event) => {
+        const raw = event.data;
+        try {
+            const parsed = JSON.parse(raw);
+            console.log('[WS <-]', parsed);
+        } catch (_) {
+            console.log('[WS <- raw]', raw);
+        }
+    });
 }
 
 function sendProtocolMessage(payload) {
