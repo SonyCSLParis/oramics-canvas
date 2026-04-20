@@ -17,7 +17,7 @@ const UI = {
 
 const PIANO_ROLL = {
     MIN_PITCH: 36, // C2
-    MAX_PITCH: 96, // C7
+    MAX_PITCH: 72, // C5
 };
 
 let socket;
@@ -77,6 +77,7 @@ function draw() {
 
     drawTabs();
     drawModeButtons();
+    drawStopButton(getStopButtonPosition());
 }
 
 function drawPianoRollBackground(opacity = 30) {
@@ -113,7 +114,7 @@ function drawPianoRollBackground(opacity = 30) {
     for (let i = 0; i < totalNotes; i++) {
         const pitch = maxPitch - i;
         const pitchClass = pitch % 12;
-        if (pitchClass === 0) {
+        if (pitchClass === 5) { // F
             const y = top + i * rowH;
             fill(0, 150, 0, opacity+20);
             rect(0, y, width, rowH);
@@ -181,7 +182,7 @@ function drawStrokeGuide(current) {
 }
 
 function handleDrawing(current) {
-    if (!mouseIsPressed || mouseY <= UI.TAB_HEIGHT || isPointInModeButton(mouseX, mouseY)) {
+    if (!mouseIsPressed || mouseY <= UI.TAB_HEIGHT || isPointInModeButton(mouseX, mouseY) || getStopButtonHit(mouseX, mouseY)) {
         return;
     }
 
@@ -226,7 +227,9 @@ function handleDrawing(current) {
         current.melodyLayer.stroke(255, 200, 100);
         current.melodyLayer.strokeWeight(4);
         current.melodyLayer.line(prevX, prevY, mouseX, mouseY);
-        sendProtocolMessage({ type: 'melody', x1, y1, t1, x2, y2, t2, target: currentTargetVST });
+        const type_label = melodyPlaybackMode === MELODY_PLAYBACK.BAR ? 'melody_bar' : 'melody_time';
+        
+        sendProtocolMessage({ type: type_label , x1, y1, t1, x2, y2, t2, target: currentTargetVST });
     }
 
     prevX = mouseX;
@@ -234,9 +237,27 @@ function handleDrawing(current) {
     prevPointMs = nowMs;
 }
 
+function clearMelody() {
+    if (!currentTargetVST || !vsts[currentTargetVST]) {
+        return;
+    }
+
+    vsts[currentTargetVST].melodyLayer.clear();
+     sendProtocolMessage({
+        type: 'melody_clear',
+        target: currentTargetVST
+     });
+}
+
 function mousePressed() {
     if (mouseY < UI.TAB_HEIGHT) {
         selectTabFromMouse();
+        return;
+    }
+
+    const stopHit = getStopButtonHit(mouseX, mouseY);
+    if (stopHit){
+        clearMelody();
         return;
     }
 
@@ -319,6 +340,13 @@ function getModeButtonLayout() {
     };
 }
 
+// Stop is in the bottom right
+function getStopButtonPosition() {
+    const x = width - UI.BUTTON_BOTTOM_MARGIN - UI.BUTTON_SIZE / 2;
+    const y = height - UI.BUTTON_BOTTOM_MARGIN - UI.BUTTON_SIZE / 2;
+    return { x, y };
+}
+
 function drawModeButtons() {
     const layout = getModeButtonLayout();
     const left = layout[MODES.WAVEFORM].x - UI.BUTTON_SIZE / 2;
@@ -346,9 +374,18 @@ function drawModeButton(position, buttonMode) {
     if (buttonMode === MODES.WAVEFORM) {
         drawWaveIcon(position.x, position.y, active);
     } else {
-        drawMelodyIcon(position.x, position.y, active);
+        drawMelodyIcon(position.x, position.y);
         drawMelodyPlaybackBadge(position.x, position.y + UI.BUTTON_SIZE * 0.42);
     }
+}
+
+function drawStopButton(position) {
+    stroke(color(160, 160, 160));
+    strokeWeight(2);
+    fill(color(35, 35, 35, 220));
+    circle(position.x, position.y, UI.BUTTON_SIZE);
+
+    drawStopIcon(position.x, position.y);
 }
 
 function drawMelodyPlaybackBadge(x, y) {
@@ -383,13 +420,23 @@ function drawWaveIcon(cx, cy, active) {
     endShape();
 }
 
-function drawMelodyIcon(cx, cy, active) {
+function drawMelodyIcon(cx, cy) {
     noFill();
 
     // Use the music notes emoji as a base for the melody icon
     textSize(32);
     textAlign(CENTER, CENTER);
     text('🎵', cx, cy + 2);
+
+}
+
+function drawStopIcon(cx, cy) {
+    noFill();
+
+    // Use the red cross emoji as a base for the stop icon
+    textSize(32);
+    textAlign(CENTER, CENTER);
+    text('❌', cx, cy + 2);
 
 }
 
@@ -411,6 +458,17 @@ function getModeButtonHit(x, y) {
     return null;
 }
 
+function getStopButtonHit(x, y) {
+    const p = getStopButtonPosition();
+    const radius = UI.BUTTON_SIZE / 2;
+
+    if (dist(x, y, p.x, p.y) <= radius) {
+        return true;
+    }
+
+    return false;
+}
+
 function sendMelodyPlaybackMode() {
     if (!socket || !currentTargetVST) {
         return;
@@ -422,3 +480,15 @@ function sendMelodyPlaybackMode() {
         target: currentTargetVST
     });
 }
+
+// function sendStopMessage(){
+//         if (!socket || !currentTargetVST) {
+//         return;
+//     }
+
+//     sendProtocolMessage({
+//         type: 'melody_clear',
+//         target: currentTargetVST
+//     });
+
+// }
